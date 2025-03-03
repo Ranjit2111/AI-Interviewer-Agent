@@ -11,6 +11,7 @@ import whisper
 import coqui_tts
 from smolagents import SmolAgent
 from dotenv import load_dotenv  # Import dotenv
+import gradio as gr
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -107,4 +108,32 @@ async def submit_context(job_role: str = Form(...), job_description: str = Form(
 
     # Here you would implement parsing logic to extract skills, experience, etc.
     # For now, we will just return the raw text for demonstration.
-    return {"job_role": job_role, "job_description": job_description, "resume_text": resume_text} 
+    return {"job_role": job_role, "job_description": job_description, "resume_text": resume_text}
+
+# Gradio function for status
+
+def gradio_read_status():
+    return read_status()
+
+# Gradio function for processing audio
+
+def gradio_process_audio(audio):
+    audio_path = f'/tmp/{audio.name}'
+    with open(audio_path, 'wb') as buffer:
+        buffer.write(audio.read())
+    return process_audio(audio=audio)
+
+# Gradio function for submitting context
+
+def gradio_submit_context(job_role, job_description, resume):
+    return submit_context(job_role=job_role, job_description=job_description, resume=resume)
+
+# Set up Gradio interfaces
+
+iface_audio = gr.Interface(fn=gradio_process_audio, inputs=gr.inputs.Audio(), outputs='audio', title='Audio Processing')
+iface_context = gr.Interface(fn=gradio_submit_context, inputs=[gr.inputs.Textbox(label='Job Role'), gr.inputs.Textbox(label='Job Description'), gr.inputs.File(label='Resume')], outputs='text', title='Submit Context')
+
+# Launch Gradio app
+if __name__ == '__main__':
+    iface_audio.launch()
+    iface_context.launch() 
