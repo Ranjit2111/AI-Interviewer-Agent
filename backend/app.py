@@ -1,3 +1,5 @@
+# This file has been renamed from main.py to app.py
+
 import os
 import shutil
 from fastapi import FastAPI, File, UploadFile, HTTPException
