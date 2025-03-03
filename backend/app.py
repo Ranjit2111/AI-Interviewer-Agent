@@ -7,8 +7,9 @@ from fastapi import Form
 from pydantic import BaseModel
 import fitz  # PyMuPDF
 import docx
-from langchain import LLMChain, PromptTemplate
-from langchain.llms import OpenAI
+from langchain_community.llms import OpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain.chains import LLMChain
 import whisper
 import coqui_tts
 from smolagents import SmolAgent
