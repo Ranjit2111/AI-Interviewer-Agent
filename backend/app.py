@@ -2,16 +2,15 @@
 
 import os
 import shutil
-from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi import Form
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from pydantic import BaseModel
 import fitz  # PyMuPDF
 import docx
 from langchain_community.llms import OpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
-import whisper
-import coqui_tts
+from faster_whisper import WhisperModel
+from TTS.api import TTS  # Correct import for Coqui TTS
 from smolagents import SmolAgent
 from dotenv import load_dotenv  # Import dotenv
 import gradio as gr
@@ -31,10 +30,10 @@ class JobContext(BaseModel):
 llm = OpenAI(api_key=os.getenv('API_KEY'))  # Use the API key from .env
 
 # Initialize Whisper model for STT
-whisper_model = whisper.load_model('base')
+whisper_model = WhisperModel("small")
 
 # Initialize Coqui TTS model
-tts_model = coqui_tts.TTS(model_name='coqui-tts')
+tts_model = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC")
 
 # Create a prompt template for adaptive questioning
 prompt_template = PromptTemplate(
@@ -68,12 +67,13 @@ async def generate_interview(user_input: UserInput, job_context: JobContext):
 
 def transcribe_audio(audio_path: str) -> str:
     # Use Whisper to transcribe audio to text
-    result = whisper_model.transcribe(audio_path)
-    return result['text']
+    segments, _ = whisper_model.transcribe(audio_path)
+    transcribed_text = " ".join([segment.text for segment in segments])
+    return transcribed_text
 
 def synthesize_speech(text: str, output_path: str):
     # Use Coqui TTS to convert text to speech
-    tts_model.save_to_file(text, output_path)
+    tts_model.tts_to_file(text=text, file_path=output_path)
 
 @app.post("/process-audio")
 async def process_audio(audio: UploadFile = File(...)):
@@ -86,7 +86,6 @@ async def process_audio(audio: UploadFile = File(...)):
     transcribed_text = transcribe_audio(audio_path)
 
     # Process the text response through the existing Gemini API/LangChain adaptive logic
-    # Assuming job_context is available or passed in some way
     job_context = JobContext(job_role="example_role", job_description="example_description")
     adaptive_prompt = chain.run(user_input=transcribed_text, job_role=job_context.job_role, job_description=job_context.job_description)
 
@@ -109,17 +108,13 @@ async def submit_context(job_role: str = Form(...), job_description: str = Form(
         doc = docx.Document(resume.file)
         resume_text = " ".join([para.text for para in doc.paragraphs])
 
-    # Here you would implement parsing logic to extract skills, experience, etc.
-    # For now, we will just return the raw text for demonstration.
     return {"job_role": job_role, "job_description": job_description, "resume_text": resume_text}
 
 # Gradio function for status
-
 def gradio_read_status():
     return read_status()
 
 # Gradio function for processing audio
-
 def gradio_process_audio(audio):
     audio_path = f'/tmp/{audio.name}'
     with open(audio_path, 'wb') as buffer:
@@ -127,16 +122,14 @@ def gradio_process_audio(audio):
     return process_audio(audio=audio)
 
 # Gradio function for submitting context
-
 def gradio_submit_context(job_role, job_description, resume):
     return submit_context(job_role=job_role, job_description=job_description, resume=resume)
 
 # Set up Gradio interfaces
-
-iface_audio = gr.Interface(fn=gradio_process_audio, inputs=gr.inputs.Audio(), outputs='audio', title='Audio Processing')
-iface_context = gr.Interface(fn=gradio_submit_context, inputs=[gr.inputs.Textbox(label='Job Role'), gr.inputs.Textbox(label='Job Description'), gr.inputs.File(label='Resume')], outputs='text', title='Submit Context')
+iface_audio = gr.Interface(fn=gradio_process_audio, inputs=gr.Audio(), outputs="audio", title="Audio Processing")
+iface_context = gr.Interface(fn=gradio_submit_context, inputs=[gr.Textbox(label="Job Role"), gr.Textbox(label="Job Description"), gr.File(label="Resume")], outputs="text", title="Submit Context")
 
 # Launch Gradio app
 if __name__ == '__main__':
     iface_audio.launch()
-    iface_context.launch() 
+    iface_context.launch()
