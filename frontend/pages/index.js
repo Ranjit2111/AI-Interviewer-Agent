@@ -7,7 +7,10 @@ export default function Home() {
   const [jobDescription, setJobDescription] = useState('');
   const [resume, setResume] = useState(null);
   const [audioFeedback, setAudioFeedback] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
   const audioRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const handleSubmitContext = async (e) => {
     e.preventDefault();
@@ -49,8 +52,32 @@ export default function Home() {
     setAudioFeedback(data.audio_url);
   };
 
-  const startRecording = () => {
-    // Implement audio recording logic here using Web Speech API or another method
+  const startRecording = async () => {
+    if (isRecording) return;
+
+    setIsRecording(true);
+    audioChunksRef.current = [];
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorderRef.current = new MediaRecorder(stream);
+
+    mediaRecorderRef.current.ondataavailable = (event) => {
+      audioChunksRef.current.push(event.data);
+    };
+
+    mediaRecorderRef.current.onstop = async () => {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+      await handleAudioSubmit(audioBlob);
+    };
+
+    mediaRecorderRef.current.start();
+  };
+
+  const stopRecording = () => {
+    if (!isRecording) return;
+
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
   };
 
   return (
@@ -91,7 +118,9 @@ export default function Home() {
         />
         <button type="submit" className="bg-blue-500 text-white p-2 rounded">Submit Interview</button>
       </form>
-      <button onClick={startRecording} className="bg-green-500 text-white p-2 rounded mb-4">Record Answer</button>
+      <button onClick={isRecording ? stopRecording : startRecording} className="bg-green-500 text-white p-2 rounded mb-4">
+        {isRecording ? 'Stop Recording' : 'Record Answer'}
+      </button>
       {response && <p className="mt-4 text-lg">{response}</p>}
       {audioFeedback && <audio ref={audioRef} controls src={audioFeedback} className="mt-4" />}
     </div>
