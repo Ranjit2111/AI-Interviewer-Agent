@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "pages/index.js",
+      "use": "next" 
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "http://<YOUR_BACKEND_URL>/api/$1"
+    }
+  ]
+} 

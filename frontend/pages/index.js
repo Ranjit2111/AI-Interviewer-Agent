@@ -1,0 +1,99 @@
+import { useState, useRef } from 'react';
+
+export default function Home() {
+  const [userInput, setUserInput] = useState('');
+  const [response, setResponse] = useState('');
+  const [jobRole, setJobRole] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [resume, setResume] = useState(null);
+  const [audioFeedback, setAudioFeedback] = useState('');
+  const audioRef = useRef(null);
+
+  const handleSubmitContext = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('job_role', jobRole);
+    formData.append('job_description', jobDescription);
+    if (resume) {
+      formData.append('resume', resume);
+    }
+
+    await fetch('/submit-context', {
+      method: 'POST',
+      body: formData,
+    });
+  };
+
+  const handleSubmitInterview = async (e) => {
+    e.preventDefault();
+    const res = await fetch('/generate-interview', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user_input: userInput, job_role: jobRole, job_description: jobDescription }),
+    });
+    const data = await res.json();
+    setResponse(data.generated_text);
+  };
+
+  const handleAudioSubmit = async (audioBlob) => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob);
+
+    const res = await fetch('/process-audio', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    setAudioFeedback(data.audio_url);
+  };
+
+  const startRecording = () => {
+    // Implement audio recording logic here using Web Speech API or another method
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <h1 className="text-3xl font-bold mb-6">AI Interview Coach</h1>
+      <form onSubmit={handleSubmitContext} className="mb-6 w-full max-w-md bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Job Details</h2>
+        <input
+          type="text"
+          value={jobRole}
+          onChange={(e) => setJobRole(e.target.value)}
+          placeholder="Job Role"
+          className="border border-gray-300 p-2 mb-4 w-full"
+        />
+        <input
+          type="text"
+          value={jobDescription}
+          onChange={(e) => setJobDescription(e.target.value)}
+          placeholder="Job Description (optional)"
+          className="border border-gray-300 p-2 mb-4 w-full"
+        />
+        <input
+          type="file"
+          onChange={(e) => setResume(e.target.files[0])}
+          accept="application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          className="mb-4"
+        />
+        <button type="submit" className="bg-blue-500 text-white p-2 rounded">Submit Context</button>
+      </form>
+      <form onSubmit={handleSubmitInterview} className="mb-6 w-full max-w-md bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Interview Interaction</h2>
+        <input
+          type="text"
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          placeholder="Type your answer..."
+          className="border border-gray-300 p-2 mb-4 w-full"
+        />
+        <button type="submit" className="bg-blue-500 text-white p-2 rounded">Submit Interview</button>
+      </form>
+      <button onClick={startRecording} className="bg-green-500 text-white p-2 rounded mb-4">Record Answer</button>
+      {response && <p className="mt-4 text-lg">{response}</p>}
+      {audioFeedback && <audio ref={audioRef} controls src={audioFeedback} className="mt-4" />}
+    </div>
+  );
+} 

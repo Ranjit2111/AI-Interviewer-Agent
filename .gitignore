@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# FastAPI
+*.db
+*.sqlite3
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Vercel
+.vercel/
+
+# Environment variables
+.env
+
+# Temporary files
+/tmp/
+.DS_Store
+*.log
+
+# Tailwind CSS
+*.css
+
+# Virtual environment
+.venv/ 
