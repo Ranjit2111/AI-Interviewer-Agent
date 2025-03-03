@@ -10,6 +10,9 @@ from langchain.llms import OpenAI
 import whisper
 import coqui_tts
 from smolagents import SmolAgent
+from dotenv import load_dotenv  # Import dotenv
+
+load_dotenv()  # Load environment variables from .env file
 
 app = FastAPI()
 
@@ -20,8 +23,8 @@ class JobContext(BaseModel):
     job_role: str
     job_description: str
 
-# Initialize the OpenAI LLM with your API key
-llm = OpenAI(api_key='YOUR_API_KEY')
+# Initialize the OpenAI LLM with your API key from the environment variable
+llm = OpenAI(api_key=os.getenv('API_KEY'))  # Use the API key from .env
 
 # Initialize Whisper model for STT
 whisper_model = whisper.load_model('base')
