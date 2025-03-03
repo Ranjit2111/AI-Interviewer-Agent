@@ -1,0 +1,22 @@
+# Virtual environment
+venv/
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Dependency files (Optional, since we use requirements.txt)
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Logs
+logs/
+*.log
+
+# Jupyter Notebook checkpoints (if using)
+.ipynb_checkpoints/
+
+# MacOS/Linux specific
+.DS_Store
