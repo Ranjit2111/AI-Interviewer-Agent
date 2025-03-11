@@ -132,6 +132,59 @@ async def submit_context(job_role: str = Form(...), job_description: str = Form(
 
     return {"job_role": job_role, "job_description": job_description, "resume_text": resume_text}
 
+# Gradio handler functions
+def gradio_process_audio(audio_data):
+    if audio_data is None:
+        return None
+    
+    # Extract audio data and save to a temporary file
+    audio_path = os.path.join(TEMP_DIR, "temp_audio.wav")
+    sr, y = audio_data
+    import scipy.io.wavfile as wav
+    wav.write(audio_path, sr, y)
+    
+    try:
+        # Transcribe the audio to text
+        transcribed_text = transcribe_audio(audio_path)
+        
+        # Process the text response
+        job_context = JobContext(job_role="example_role", job_description="example_description")
+        adaptive_prompt = chain.run(user_input=transcribed_text, job_role=job_context.job_role, job_description=job_context.job_description)
+        
+        # Synthesize speech from the generated feedback
+        output_audio_path = os.path.join(TEMP_DIR, 'feedback_audio.wav')
+        synthesize_speech(adaptive_prompt, output_audio_path)
+        
+        return output_audio_path
+    except Exception as e:
+        print(f"Error processing audio: {e}")
+        return None
+    finally:
+        # Clean up
+        if os.path.exists(audio_path):
+            os.unlink(audio_path)
+
+def gradio_submit_context(job_role, job_description, resume_file):
+    if not resume_file:
+        return "Please upload a resume file."
+    
+    try:
+        resume_text = ""
+        file_path = resume_file.name
+        
+        if file_path.endswith('.pdf'):
+            pdf_document = fitz.open(file_path)
+            resume_text = " ".join([page.get_text() for page in pdf_document])
+        elif file_path.endswith('.docx'):
+            doc = docx.Document(file_path)
+            resume_text = " ".join([para.text for para in doc.paragraphs])
+        else:
+            return "Invalid file type. Only PDF and DOCX are allowed."
+        
+        return f"Job Role: {job_role}\nJob Description: {job_description}\nResume Text: {resume_text[:500]}..."
+    except Exception as e:
+        return f"Error processing resume: {e}"
+
 # Create a single Gradio interface that combines all functionality
 def create_gradio_interface():
     with gr.Blocks(title="AI Interviewer") as interface:
