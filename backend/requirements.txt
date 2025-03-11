@@ -1,16 +1,18 @@
-fastapi>=0.115.2,<1.0.0
-uvicorn[standard]==0.24.0
-PyMuPDF==1.18.19
+gradio>=3.50.0,<5.0.0
+PyMuPDF==1.21.1
 python-docx==0.8.11
-langchain==0.0.200
-langchain-community==0.0.10
-langchain-core==0.1.1
-coqui-tts==0.25.0
-smolagents==0.1.0
-faster-whisper==0.9.0
+# Using compatible langchain versions
+langchain-core>=0.1.28
+langchain-community>=0.0.10
+langchain-google-genai>=0.0.3
+# PDF processing options
+pypdf==3.17.1
 pdfplumber==0.7.4
-gradio==5.8.0
-python-multipart==0.0.6
-scipy==1.11.3
-python-dotenv==1.0.0
-openai==0.28.0
+# Basic utilities
+scipy==1.10.0
+python-dotenv
+numpy==1.23.5
+# No longer needed since we're not using FastAPI
+# fastapi==0.95.0
+# uvicorn[standard]==0.22.0
+# python-multipart
