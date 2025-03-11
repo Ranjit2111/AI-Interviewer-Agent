@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -9,36 +10,109 @@
     @apply scroll-smooth;
   }
   body {
-    @apply bg-gradient-to-br from-neutral-50 to-primary-50 min-h-screen font-sans text-neutral-800;
+    @apply bg-dark-900 text-shaga-primary font-sans min-h-screen overflow-x-hidden;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23333333' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold text-neutral-900;
+    @apply font-semibold text-shaga-primary;
+  }
+  ::selection {
+    @apply bg-accent-yellow text-dark-900;
   }
 }
 
 @layer components {
+  .navbar {
+    @apply fixed top-0 left-0 right-0 z-50 bg-dark-800/90 backdrop-blur-md transition-all duration-300;
+  }
+  
+  .navbar-hidden {
+    @apply -translate-y-full;
+  }
+  
+  .navbar-visible {
+    @apply translate-y-0;
+  }
+  
+  .nav-link {
+    @apply text-shaga-secondary hover:text-accent-yellow transition-colors duration-200 uppercase text-xs tracking-widest;
+  }
+  
+  .nav-link-active {
+    @apply text-accent-yellow;
+  }
+  
   .btn {
-    @apply px-4 py-2 rounded-md font-medium transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-50;
+    @apply px-4 py-2 uppercase tracking-wider text-sm font-medium transition-all duration-200 inline-flex items-center justify-center;
   }
+  
   .btn-primary {
-    @apply btn bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500;
+    @apply btn bg-dark-600 border border-dark-400 text-shaga-primary hover:border-accent-yellow hover:text-accent-yellow;
   }
-  .btn-secondary {
-    @apply btn bg-secondary-600 hover:bg-secondary-700 text-white focus:ring-secondary-500;
-  }
+  
   .btn-accent {
-    @apply btn bg-accent-600 hover:bg-accent-700 text-white focus:ring-accent-500;
+    @apply btn bg-dark-700 border border-accent-yellow text-accent-yellow hover:bg-accent-yellow hover:text-dark-900;
   }
+  
   .btn-outline {
-    @apply btn border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500;
+    @apply btn border border-shaga-secondary text-shaga-secondary hover:border-accent-yellow hover:text-accent-yellow;
   }
+  
+  .section {
+    @apply py-24 relative;
+  }
+  
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
   .card {
-    @apply bg-white rounded-xl shadow-card p-6 transition-all duration-300 hover:shadow-lg;
+    @apply bg-dark-700 border border-dark-500 rounded-md overflow-hidden transition-all duration-300;
   }
+  
   .input-field {
-    @apply w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+    @apply w-full px-4 py-3 bg-dark-600 border border-dark-400 rounded-md text-shaga-primary placeholder-shaga-muted focus:outline-none focus:ring-1 focus:ring-accent-yellow focus:border-accent-yellow transition-all duration-200;
   }
+  
   .file-input {
-    @apply block w-full text-sm text-neutral-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all duration-200;
+    @apply block w-full text-sm text-shaga-secondary file:mr-4 file:py-2 file:px-4 file:rounded-md file:border file:border-dark-400 file:text-sm file:font-medium file:bg-dark-600 file:text-shaga-primary hover:file:border-accent-yellow hover:file:text-accent-yellow transition-all duration-200;
+  }
+  
+  .camera-container {
+    @apply relative w-full aspect-[16/9] bg-dark-800 rounded-md overflow-hidden border border-dark-400;
+  }
+  
+  .parallax-layer {
+    @apply absolute inset-0 will-change-transform;
+  }
+  
+  .fade-in {
+    @apply opacity-0 animate-fade-in;
+    animation-fill-mode: forwards;
+  }
+  
+  .slide-up {
+    @apply opacity-0 animate-slide-up;
+    animation-fill-mode: forwards;
+  }
+  
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+  
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animation-delay-500 {
+    animation-delay: 500ms;
   }
 } 

@@ -14,10 +14,15 @@ from TTS.api import TTS  # Correct import for Coqui TTS
 from smolagents import SmolAgent
 from dotenv import load_dotenv  # Import dotenv
 import gradio as gr
+import tempfile
 
 load_dotenv()  # Load environment variables from .env file
 
 app = FastAPI()
+
+# Create temp directory if it doesn't exist
+TEMP_DIR = os.path.join(os.getcwd(), "temp")
+os.makedirs(TEMP_DIR, exist_ok=True)
 
 class UserInput(BaseModel):
     user_input: str
@@ -29,11 +34,21 @@ class JobContext(BaseModel):
 # Initialize the OpenAI LLM with your API key from the environment variable
 llm = OpenAI(api_key=os.getenv('API_KEY'))  # Use the API key from .env
 
-# Initialize Whisper model for STT
-whisper_model = WhisperModel("small")
+# Initialize models only when needed to save memory and speed up builds
+whisper_model = None
+tts_model = None
 
-# Initialize Coqui TTS model
-tts_model = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC")
+def get_whisper_model():
+    global whisper_model
+    if whisper_model is None:
+        whisper_model = WhisperModel("tiny", download_root=TEMP_DIR)
+    return whisper_model
+
+def get_tts_model():
+    global tts_model
+    if tts_model is None:
+        tts_model = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False)
+    return tts_model
 
 # Create a prompt template for adaptive questioning
 prompt_template = PromptTemplate(
@@ -67,33 +82,40 @@ async def generate_interview(user_input: UserInput, job_context: JobContext):
 
 def transcribe_audio(audio_path: str) -> str:
     # Use Whisper to transcribe audio to text
-    segments, _ = whisper_model.transcribe(audio_path)
+    model = get_whisper_model()
+    segments, _ = model.transcribe(audio_path)
     transcribed_text = " ".join([segment.text for segment in segments])
     return transcribed_text
 
 def synthesize_speech(text: str, output_path: str):
     # Use Coqui TTS to convert text to speech
-    tts_model.tts_to_file(text=text, file_path=output_path)
+    model = get_tts_model()
+    model.tts_to_file(text=text, file_path=output_path)
 
 @app.post("/process-audio")
 async def process_audio(audio: UploadFile = File(...)):
-    # Save the uploaded audio file temporarily
-    audio_path = f"/tmp/{audio.filename}"
-    with open(audio_path, "wb") as buffer:
-        shutil.copyfileobj(audio.file, buffer)
+    # Create a temporary file with a proper extension
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav', dir=TEMP_DIR) as temp_audio:
+        audio_path = temp_audio.name
+        shutil.copyfileobj(audio.file, temp_audio)
 
-    # Transcribe the audio to text
-    transcribed_text = transcribe_audio(audio_path)
+    try:
+        # Transcribe the audio to text
+        transcribed_text = transcribe_audio(audio_path)
 
-    # Process the text response through the existing Gemini API/LangChain adaptive logic
-    job_context = JobContext(job_role="example_role", job_description="example_description")
-    adaptive_prompt = chain.run(user_input=transcribed_text, job_role=job_context.job_role, job_description=job_context.job_description)
+        # Process the text response through the existing Gemini API/LangChain adaptive logic
+        job_context = JobContext(job_role="example_role", job_description="example_description")
+        adaptive_prompt = chain.run(user_input=transcribed_text, job_role=job_context.job_role, job_description=job_context.job_description)
 
-    # Synthesize speech from the generated feedback
-    output_audio_path = f"/tmp/feedback_audio.wav"
-    synthesize_speech(adaptive_prompt, output_audio_path)
+        # Synthesize speech from the generated feedback
+        output_audio_path = os.path.join(TEMP_DIR, 'feedback_audio.wav')
+        synthesize_speech(adaptive_prompt, output_audio_path)
 
-    return {"audio_url": output_audio_path}
+        return {"audio_url": output_audio_path}
+    finally:
+        # Clean up temporary files
+        if os.path.exists(audio_path):
+            os.unlink(audio_path)
 
 @app.post("/submit-context")
 async def submit_context(job_role: str = Form(...), job_description: str = Form(...), resume: UploadFile = File(...)):
@@ -110,26 +132,28 @@ async def submit_context(job_role: str = Form(...), job_description: str = Form(
 
     return {"job_role": job_role, "job_description": job_description, "resume_text": resume_text}
 
-# Gradio function for status
-def gradio_read_status():
-    return read_status()
+# Create a single Gradio interface that combines all functionality
+def create_gradio_interface():
+    with gr.Blocks(title="AI Interviewer") as interface:
+        with gr.Tab("Audio Processing"):
+            audio_input = gr.Audio()
+            audio_output = gr.Audio()
+            audio_button = gr.Button("Process Audio")
+            audio_button.click(fn=gradio_process_audio, inputs=audio_input, outputs=audio_output)
+            
+        with gr.Tab("Submit Context"):
+            job_role = gr.Textbox(label="Job Role")
+            job_desc = gr.Textbox(label="Job Description")
+            resume = gr.File(label="Resume")
+            submit_button = gr.Button("Submit")
+            output = gr.Textbox(label="Result")
+            submit_button.click(fn=gradio_submit_context, inputs=[job_role, job_desc, resume], outputs=output)
+    
+    return interface
 
-# Gradio function for processing audio
-def gradio_process_audio(audio):
-    audio_path = f'/tmp/{audio.name}'
-    with open(audio_path, 'wb') as buffer:
-        buffer.write(audio.read())
-    return process_audio(audio=audio)
-
-# Gradio function for submitting context
-def gradio_submit_context(job_role, job_description, resume):
-    return submit_context(job_role=job_role, job_description=job_description, resume=resume)
-
-# Set up Gradio interfaces
-iface_audio = gr.Interface(fn=gradio_process_audio, inputs=gr.Audio(), outputs="audio", title="Audio Processing")
-iface_context = gr.Interface(fn=gradio_submit_context, inputs=[gr.Textbox(label="Job Role"), gr.Textbox(label="Job Description"), gr.File(label="Resume")], outputs="text", title="Submit Context")
-
-# Launch Gradio app
-if __name__ == '__main__':
-    iface_audio.launch()
-    iface_context.launch()
+# Launch the application
+if __name__ == "__main__":
+    import uvicorn
+    interface = create_gradio_interface()
+    interface.launch()
+    uvicorn.run(app, host="0.0.0.0", port=7860)
