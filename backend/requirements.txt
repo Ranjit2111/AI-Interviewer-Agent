@@ -1,18 +1,25 @@
-gradio>=3.50.0,<5.0.0
-PyMuPDF==1.21.1
-python-docx==0.8.11
-# Using compatible langchain versions
+# Azure ML dependencies
+azure-ai-ml>=1.12.0
+azure-identity>=1.15.0
+azure-storage-blob>=12.19.0
+
+# Core dependencies
 langchain-core>=0.1.28
 langchain-community>=0.0.10
 langchain-google-genai>=0.0.3
-# PDF processing options
+
+# PDF processing
+PyMuPDF==1.21.1
+python-docx==0.8.11
 pypdf==3.17.1
 pdfplumber==0.7.4
+
+# Web framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.7
+
 # Basic utilities
 scipy==1.10.0
-python-dotenv
-numpy==1.23.5
-# No longer needed since we're not using FastAPI
-# fastapi==0.95.0
-# uvicorn[standard]==0.22.0
-# python-multipart
+python-dotenv>=1.0.0
+numpy==1.23.5 
